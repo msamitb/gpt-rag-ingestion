@@ -208,6 +208,8 @@ class BaseChunker:
         # Use summary for embedding if available; otherwise, use truncated content
         embedding_text = embedding_text if embedding_text else truncated_content
         content_vector = self.aoai_client.get_embeddings(embedding_text)
+        domain = os.path.dirname(self.filepath).split(os.sep)[-1]
+        logging.info(f"Domain value - 3: {domain}")
 
         return {
             "chunk_id": chunk_id,
@@ -224,7 +226,8 @@ class BaseChunker:
             "page": page,
             "offset": offset,
             "relatedImages": related_images,
-            "relatedFiles": related_files          
+            "relatedFiles": related_files,
+            "domain": domain
         }
 
     def _extract_title_from_filename(self, filename):

@@ -13,7 +13,7 @@ from chunking import DocumentChunker
 from connectors import SharepointFilesIndexer, SharepointDeletedFilesPurger
 from connectors import ImagesDeletedFilesPurger
 from tools import BlobClient
-from utils.file_utils import get_filename
+from utils.file_utils import get_filename, get_filepath_from_data
 
 # -------------------------------
 # Logging configuration
@@ -147,11 +147,21 @@ def document_chunking(req: func.HttpRequest) -> func.HttpResponse:
             input_data['documentBytes'] = document_bytes          
             input_data['fileName'] = filename
 
+            # Extract the subfolder name (domain) from the blob path so it can be indexed
+            try:
+                filepath_rel = get_filepath_from_data(input_data)
+                domain_name = filepath_rel.split('/')[0] if filepath_rel else ""
+            except Exception as e:
+                logging.debug(f"[document_chunking_function] Failed to extract domain from path: {e}")
+                domain_name = ""
+
             # Chunk the document
             chunks, errors, warnings = DocumentChunker().chunk_documents(input_data)
 
             # Enrich chunks with metadata to be indexed
-            for chunk in chunks: chunk["source"] = "blob"
+            for chunk in chunks:
+                chunk["source"] = "blob"
+                chunk["domain"] = domain_name
          
             # Debug logging
             for idx, chunk in enumerate(chunks):

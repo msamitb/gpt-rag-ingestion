@@ -85,6 +85,38 @@ class DocAnalysisChunker(BaseChunker):
             formatted_errors = ', '.join(map(str, analysis_errors))
             raise Exception(f"Error in doc_analysis_chunker analyzing {self.filename}: {formatted_errors}")
 
+            page_count = document.get('page_count') or document.get('pages') or None
+            if not page_count:
+                # Try to infer page count from content
+                pagebreaks = re.findall(r'<!-- PageBreak\d{5} -->', document['content'])
+                page_count = len(pagebreaks)
+            if page_count and page_count > 50:
+                logging.warning(f"[doc_analysis_chunker][{self.filename}] Document has {page_count} pages, splitting into smaller files.")
+                # Split content by page breaks
+                content = document['content']
+                page_splits = re.split(r'(<!-- PageBreak\d{5} -->)', content)
+                # Group into chunks of 50 pages
+                def group_pages(page_splits, group_size=50):
+                    group = []
+                    count = 0
+                    for part in page_splits:
+                        group.append(part)
+                        if re.match(r'<!-- PageBreak\d{5} -->', part):
+                            count += 1
+                        if count == group_size:
+                            yield ''.join(group)
+                            group = []
+                            count = 0
+                    if group:
+                        yield ''.join(group)
+                chunks = []
+                for idx, sub_content in enumerate(group_pages(page_splits)):
+                    sub_document = document.copy()
+                    sub_document['content'] = sub_content
+                    sub_chunks = self._process_document_chunks(sub_document)
+                    chunks.extend(sub_chunks)
+                return chunks
+            
         chunks = self._process_document_chunks(document)
         
         return chunks

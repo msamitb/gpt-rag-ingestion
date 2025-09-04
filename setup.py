@@ -402,6 +402,13 @@ def execute_setup(subscription_id, resource_group, function_app_name, search_pri
             "index_name": search_index_name,  # RAG index
             "fields": [
                 {
+                    "name": "domain",
+                    "type": "Edm.String",
+                    "filterable": True,
+                    "facetable": True,
+                    "searchable": False
+                },
+                {
                     "name": "id",
                     "type": "Edm.String",
                     "key": True,
@@ -896,6 +903,11 @@ def execute_setup(subscription_id, resource_group, function_app_name, search_pri
                         {
                             "name": "filepath",
                             "source": "/document/chunks/*/filepath",
+                            "inputs": []
+                        },
+                        {
+                            "name": "domain",
+                            "source": "/document/chunks/*/domain",
                             "inputs": []
                         },
                         {
